@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+package grpcbuild;
+
+service GrpcBuild {
+    rpc Init(InitRequest) returns (InitResponse) {}
+    rpc Send(SendRequest) returns (SendResponse) {}
+    rpc Exec(ExecRequest) returns (ExecResponse) {}
+}
+
+message InitRequest {
+    string Dir = 1;
+}
+
+message InitResponse {
+}
+
+message File {
+    string Filename = 1;
+    string Dir = 2;
+    bytes Data = 3;
+}
+
+message SendRequest {
+    repeated File Files = 1;
+}
+
+message SendResponse {
+}
+
+message Cmd {
+    string Path = 1;
+    repeated string Args = 2;
+    repeated string Env = 3;
+    string Dir = 4;
+}
+
+message ExecRequest {
+    repeated Cmd Cmds = 1;
+    repeated string Files = 2;
+}
+
+message ExecResponse {
+    int32 ExitCode = 1;
+    bytes Stdout = 2;
+    bytes Stderr = 3;
+    repeated File Files = 4;
+}

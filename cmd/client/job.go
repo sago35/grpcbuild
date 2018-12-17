@@ -11,6 +11,7 @@ type job struct {
 	name    string
 	ch      chan string
 	outFile []string
+	depFile []string
 }
 
 func newJob() *job {
@@ -19,6 +20,7 @@ func newJob() *job {
 
 func (j *job) GetExecRequest() (*pb.ExecRequest, error) {
 	ret := &pb.ExecRequest{}
+	ret.Files = j.outFile
 
 	for _, c := range j.Cmds {
 		ret.Cmds = append(ret.Cmds, &pb.Cmd{

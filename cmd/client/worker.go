@@ -96,7 +96,19 @@ func (w *worker) Do(ctx context.Context, lj limichan.Job) error {
 	defer close(job.ch)
 
 	start := time.Now()
-	job.ch <- fmt.Sprintf("# %-20s %s", w.name, job.name)
+	job.ch <- fmt.Sprintf("# %-16s %-16s %d", w.name, job.name, time.Now().UnixNano()/1000000)
+
+	for _, f := range job.depFile {
+		sr, err := pb.MkSendRequest(f)
+		if err != nil {
+			return err
+		}
+
+		_, err = w.client.Send(ctx, sr)
+		if err != nil {
+			return err
+		}
+	}
 
 	er, err := job.GetExecRequest()
 	if err != nil {
@@ -125,7 +137,7 @@ func (w *worker) Do(ctx context.Context, lj limichan.Job) error {
 		return err
 	}
 
-	job.ch <- fmt.Sprintf("# %-20s %s (%dms)", w.name, job.name, time.Since(start).Nanoseconds()/1000000)
+	job.ch <- fmt.Sprintf("# %-16s %-16s %d (%dms)", w.name, job.name, time.Now().UnixNano()/1000000, time.Since(start).Nanoseconds()/1000000)
 
 	return nil
 }

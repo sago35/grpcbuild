@@ -30,7 +30,7 @@ func (w *lworker) Do(ctx context.Context, lj limichan.Job) error {
 	defer close(job.ch)
 
 	start := time.Now()
-	job.ch <- fmt.Sprintf("# %-20s %s", w.name, job.name)
+	job.ch <- fmt.Sprintf("# %-16s %-16s %d", w.name, job.name, time.Now().UnixNano()/1000000)
 
 	for _, cmd := range job.Cmds {
 		so := new(bytes.Buffer)
@@ -52,7 +52,7 @@ func (w *lworker) Do(ctx context.Context, lj limichan.Job) error {
 		}
 	}
 
-	job.ch <- fmt.Sprintf("# %-20s %s (%dms)", w.name, job.name, time.Since(start).Nanoseconds()/1000000)
+	job.ch <- fmt.Sprintf("# %-16s %-16s %d (%dms)", w.name, job.name, time.Now().UnixNano()/1000000, time.Since(start).Nanoseconds()/1000000)
 
 	return nil
 }

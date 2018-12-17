@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -23,32 +24,53 @@ func main() {
 
 	input := flag.Arg(0)
 
-	r, err := os.Open(input)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer r.Close()
-
-	scanner := bufio.NewScanner(r)
-
-	if scanner.Scan() {
-		waitMs, err := strconv.ParseInt(scanner.Text(), 10, 64)
+	if strings.HasPrefix(os.Args[0], "dummycc") {
+		r, err := os.Open(input)
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Printf("compile %s (wait %dms)\n", input, waitMs)
+		defer r.Close()
 
-		buf := []string{}
-		for scanner.Scan() {
-			buf = append(buf, scanner.Text())
-		}
+		scanner := bufio.NewScanner(r)
 
-		if len(buf) == 0 {
-			time.Sleep(time.Duration(waitMs) * time.Millisecond)
+		if scanner.Scan() {
+			waitMs, err := strconv.ParseInt(scanner.Text(), 10, 64)
+			if err != nil {
+				log.Fatal(err)
+			}
+			fmt.Printf("compile %s (wait %dms)\n", input, waitMs)
+
+			buf := []string{}
+			for scanner.Scan() {
+				buf = append(buf, scanner.Text())
+			}
+
+			if len(buf) == 0 {
+				time.Sleep(time.Duration(waitMs) * time.Millisecond)
+			} else {
+				for _, s := range buf {
+					time.Sleep(time.Duration(int(waitMs)/len(buf)) * time.Millisecond)
+					fmt.Printf("%s\n", s)
+				}
+			}
+
+			w2, err := os.Create(*output)
+			if err != nil {
+				log.Fatal(err)
+			}
+			w2.Close()
 		} else {
-			for _, s := range buf {
-				time.Sleep(time.Duration(int(waitMs)/len(buf)) * time.Millisecond)
-				fmt.Printf("%s\n", s)
+			log.Fatal("error")
+		}
+	} else {
+
+		for _, f := range flag.Args() {
+			fi, err := os.Stat(f)
+			if err != nil {
+				log.Fatal(err)
+			}
+			if false {
+				fmt.Println(fi)
 			}
 		}
 
@@ -56,8 +78,8 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		defer w2.Close()
-	} else {
+		w2.Close()
+
 		fmt.Printf("link %s (wait %dms)\n", input, 1000)
 		time.Sleep(1 * time.Second)
 	}

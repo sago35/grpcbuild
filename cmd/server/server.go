@@ -67,10 +67,10 @@ func (s *server) Exec(ctx context.Context, in *pb.ExecRequest) (*pb.ExecResponse
 		cmd := exec.CommandContext(ctx, c.GetPath(), c.GetArgs()...)
 		cmd.Dir = filepath.Join(s.dir, c.GetDir())
 		cmd.Stdout = mwso
-		cmd.Stdout = mwse
+		cmd.Stderr = mwse
 		err := cmd.Run()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("%s : %s", err.Error(), se.String())
 		}
 
 		stdout.Write(so.Bytes())

@@ -60,17 +60,25 @@ func run(threads int, ris []remoteInfo) error {
 		}
 
 		for _, job := range jobs {
+			if job.Cmds[0].Path == "dummyld" {
+				oc.Wait()
+			}
+
 			job := job
 			job.ch = oc.GetCh()
-			err := l.Do(job)
+			err = l.Do(job)
 			if err != nil {
+				close(job.ch)
 				log.Print(err)
 			}
 		}
 		oc.Wait()
-		l.Wait()
+		err = l.Wait()
+		if err != nil {
+			log.Fatal(err)
+		}
 
-		result <- fmt.Sprintf("%dms\n", time.Since(startTime).Nanoseconds()/1000000)
+		result <- fmt.Sprintf("%dms", time.Since(startTime).Nanoseconds()/1000000)
 		close(result)
 	}()
 
@@ -100,6 +108,12 @@ func makeJobs(path string) ([]*job, error) {
 			Path: fields[0],
 			Args: fields,
 		})
+
+		j.outFile = []string{fields[2]}
+
+		if strings.HasPrefix(fields[0], "dummyld") {
+			j.depFile = fields[3:]
+		}
 
 		ret = append(ret, j)
 	}

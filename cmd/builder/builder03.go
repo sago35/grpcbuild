@@ -1,46 +1,32 @@
 package main
 
 import (
-	"bufio"
-	"io"
 	"os"
 	"os/exec"
-	"strings"
 	"sync"
 )
 
-func build03(r io.Reader) error {
-	scanner := bufio.NewScanner(r)
+func build03(cmds []*exec.Cmd) error {
 	var wg sync.WaitGroup
 
 	limit := make(chan struct{}, *threads)
 
-	for scanner.Scan() {
-		fields := strings.Fields(scanner.Text())
+	for _, cmd := range cmds {
+		cmd := cmd
 
-		if fields[0] == dummyCc {
-			limit <- struct{}{}
-			wg.Add(1)
-			go func() {
-				defer func() { <-limit }()
-				defer wg.Done()
-				cmd := exec.Command(fields[0], fields[1:]...)
-				cmd.Stdout = os.Stdout
-				cmd.Run()
-			}()
-		} else {
+		if cmd.Path != dummyCc {
+			// コンパイラではない時は、直前までのコンパイルが終わるのを待つ
 			wg.Wait()
-
-			limit <- struct{}{}
-			wg.Add(1)
-			go func() {
-				defer func() { <-limit }()
-				defer wg.Done()
-				cmd := exec.Command(fields[0], fields[1:]...)
-				cmd.Stdout = os.Stdout
-				cmd.Run()
-			}()
 		}
+
+		limit <- struct{}{}
+		wg.Add(1)
+		go func() {
+			defer func() { <-limit }()
+			defer wg.Done()
+			cmd.Stdout = os.Stdout
+			cmd.Run()
+		}()
 	}
 	wg.Wait()
 	return nil

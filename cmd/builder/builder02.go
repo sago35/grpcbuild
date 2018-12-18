@@ -1,12 +1,12 @@
 package main
 
 import (
-	"os"
+	"fmt"
 	"os/exec"
 	"sync"
 )
 
-func build02(cmds []*exec.Cmd) error {
+func build02(cmds []*exec.Cmd) {
 	var wg sync.WaitGroup
 
 	for _, cmd := range cmds {
@@ -20,10 +20,9 @@ func build02(cmds []*exec.Cmd) error {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			cmd.Stdout = os.Stdout
-			cmd.Run()
+			buf, _ := cmd.CombinedOutput()
+			fmt.Print(string(buf))
 		}()
 	}
 	wg.Wait()
-	return nil
 }

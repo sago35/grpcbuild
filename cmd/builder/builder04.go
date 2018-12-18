@@ -1,22 +1,20 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"os/exec"
-	"strings"
 
 	"github.com/sago35/ochan"
 )
 
-func build04(cmds []*exec.Cmd) error {
+func build04(cmds []*exec.Cmd) {
 	outCh := make(chan string, 10000)
 	defer close(outCh)
 
 	oc := ochan.NewOchan(outCh, 100)
 	go func() {
 		for ch := range outCh {
-			fmt.Println(ch)
+			fmt.Print(ch)
 		}
 	}()
 
@@ -36,15 +34,11 @@ func build04(cmds []*exec.Cmd) error {
 			defer func() { <-limit }()
 			defer close(ch)
 
-			so := new(bytes.Buffer)
-			cmd.Stdout = so
-			cmd.Run()
-
-			if so.Len() > 0 {
-				ch <- strings.TrimSpace(so.String())
+			buf, _ := cmd.CombinedOutput()
+			if len(buf) > 0 {
+				ch <- string(buf)
 			}
 		}()
 	}
 	oc.Wait()
-	return nil
 }

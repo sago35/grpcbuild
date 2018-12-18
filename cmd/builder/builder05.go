@@ -1,11 +1,9 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"os/exec"
-	"strings"
 
 	"github.com/sago35/limichan"
 	"github.com/sago35/ochan"
@@ -22,39 +20,42 @@ type lworker struct {
 	name string
 }
 
+func newLocalWorker() (*lworker, error) {
+	return &lworker{}, nil
+}
+
 func (w *lworker) Do(ctx context.Context, lj limichan.Job) error {
 	job, _ := lj.(*job)
 	defer close(job.ch)
 
 	cmd := job.cmd
 
-	so := new(bytes.Buffer)
-	cmd.Stdout = so
-	cmd.Run()
-
-	if so.Len() > 0 {
-		job.ch <- strings.TrimSpace(so.String())
+	buf, _ := cmd.CombinedOutput()
+	if len(buf) > 0 {
+		job.ch <- string(buf)
 	}
 
 	return nil
 }
 
-func build05(cmds []*exec.Cmd) error {
+func build05(cmds []*exec.Cmd) {
 	outCh := make(chan string, 10000)
-	defer close(outCh)
+	done := make(chan struct{})
 
-	oc := ochan.NewOchan(outCh, 100)
 	go func() {
 		for ch := range outCh {
-			fmt.Println(ch)
+			fmt.Print(ch)
 		}
+		close(done)
 	}()
 
 	l, _ := limichan.New(context.Background())
+	w, _ := newLocalWorker()
 	for i := 0; i < *threads; i++ {
-		l.AddWorker(&lworker{name: fmt.Sprintf("lworker(%d)", i)})
+		l.AddWorker(w)
 	}
 
+	oc := ochan.NewOchan(outCh, 100)
 	for _, cmd := range cmds {
 		cmd := cmd
 
@@ -63,14 +64,15 @@ func build05(cmds []*exec.Cmd) error {
 			oc.Wait()
 		}
 
-		ch := oc.GetCh()
 		j := &job{
 			cmd: cmd,
-			ch:  ch,
+			ch:  oc.GetCh(),
 		}
 
 		l.Do(j)
 	}
-
-	return nil
+	oc.Wait()
+	l.Wait()
+	close(outCh)
+	<-done
 }

@@ -1,14 +1,13 @@
 package main
 
 import (
-	"os"
+	"fmt"
 	"os/exec"
 )
 
-func build01(cmds []*exec.Cmd) error {
+func build01(cmds []*exec.Cmd) {
 	for _, cmd := range cmds {
-		cmd.Stdout = os.Stdout
-		cmd.Run()
+		buf, _ := cmd.CombinedOutput()
+		fmt.Print(string(buf))
 	}
-	return nil
 }

@@ -1,14 +1,15 @@
 package main
 
 import (
-	"os"
+	"fmt"
 	"os/exec"
 	"sync"
 )
 
-func build03(cmds []*exec.Cmd) error {
+func build03(cmds []*exec.Cmd) {
 	var wg sync.WaitGroup
 
+	// *threads 分だけ cap を作っておく事で分散数を制御する
 	limit := make(chan struct{}, *threads)
 
 	for _, cmd := range cmds {
@@ -24,10 +25,9 @@ func build03(cmds []*exec.Cmd) error {
 		go func() {
 			defer func() { <-limit }()
 			defer wg.Done()
-			cmd.Stdout = os.Stdout
-			cmd.Run()
+			buf, _ := cmd.CombinedOutput()
+			fmt.Print(string(buf))
 		}()
 	}
 	wg.Wait()
-	return nil
 }

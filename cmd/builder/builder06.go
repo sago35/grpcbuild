@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"strings"
 
 	pb "github.com/sago35/grpcbuild"
 	"github.com/sago35/limichan"
@@ -76,20 +75,6 @@ func newWorker(addr string, port int, threads int) (*worker, error) {
 	return w, nil
 }
 
-func (w *worker) Clone(name string) *worker {
-	ret := &worker{
-		name:    name,
-		conn:    w.conn,
-		client:  w.client,
-		ctx:     w.ctx,
-		cancel:  w.cancel,
-		addr:    w.addr,
-		port:    w.port,
-		threads: w.threads,
-	}
-	return ret
-}
-
 func (w *worker) Do(ctx context.Context, lj limichan.Job) error {
 	job, _ := lj.(*job)
 	defer close(job.ch)
@@ -125,7 +110,7 @@ func (w *worker) Do(ctx context.Context, lj limichan.Job) error {
 	}
 
 	if len(res.GetStdout()) > 0 {
-		job.ch <- strings.TrimSpace(string(res.GetStdout()))
+		job.ch <- string(res.GetStdout())
 	}
 
 	// リモートで処理したファイルをローカルに保存する
@@ -153,43 +138,41 @@ func makeFileList() ([]string, error) {
 	return ret, nil
 }
 
-func build06(cmds []*exec.Cmd) error {
+func build06(cmds []*exec.Cmd) {
 	outCh := make(chan string, 10000)
-	defer close(outCh)
+	done := make(chan struct{})
 
-	oc := ochan.NewOchan(outCh, 100)
 	go func() {
 		for ch := range outCh {
-			fmt.Println(ch)
+			fmt.Print(ch)
 		}
+		close(done)
 	}()
 
 	l, _ := limichan.New(context.Background())
-	w, err := newWorker(`127.0.0.1`, 12345, *threads)
-	if err != nil {
-		return err
-	}
+	w, _ := newWorker(`127.0.0.1`, 12345, *threads)
 	for i := 0; i < *threads; i++ {
-		l.AddWorker(w.Clone(fmt.Sprintf("grpcWorker(%d)", i)))
+		l.AddWorker(w)
 	}
 
+	oc := ochan.NewOchan(outCh, 100)
 	for _, cmd := range cmds {
 		cmd := cmd
 
 		if cmd.Path != dummyCc {
 			// コンパイラではない時は、直前までのコンパイルが終わるのを待つ
-			fmt.Println(1, cmd.Path)
 			oc.Wait()
 		}
 
-		ch := oc.GetCh()
 		j := &job{
 			cmd: cmd,
-			ch:  ch,
+			ch:  oc.GetCh(),
 		}
 
 		l.Do(j)
 	}
-
-	return nil
+	oc.Wait()
+	l.Wait()
+	close(outCh)
+	<-done
 }

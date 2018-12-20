@@ -38,6 +38,8 @@ func main() {
 		build05(cmds)
 	case 6:
 		build06(cmds)
+	case 7:
+		build07(cmds)
 	default:
 		panic("error")
 	}

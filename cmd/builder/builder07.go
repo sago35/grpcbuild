@@ -1,13 +1,15 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os/exec"
 
+	"github.com/sago35/limichan"
 	"github.com/sago35/ochan"
 )
 
-func build04(cmds []*exec.Cmd) {
+func build07(cmds []*exec.Cmd) {
 	outCh := make(chan string, 10000)
 	done := make(chan struct{})
 
@@ -18,7 +20,17 @@ func build04(cmds []*exec.Cmd) {
 		close(done)
 	}()
 
-	limit := make(chan struct{}, *threads)
+	l, _ := limichan.New(context.Background())
+	w, _ := newLocalWorker()
+	for i := 0; i < *threads; i++ {
+		l.AddWorker(w)
+	}
+	go func() {
+		w, _ := newWorker(`127.0.0.1`, 12345, *threads)
+		for i := 0; i < *threads; i++ {
+			l.AddWorker(w)
+		}
+	}()
 
 	oc := ochan.NewOchan(outCh, 100)
 	for _, cmd := range cmds {
@@ -29,19 +41,15 @@ func build04(cmds []*exec.Cmd) {
 			oc.Wait()
 		}
 
-		limit <- struct{}{}
-		ch := oc.GetCh()
-		go func() {
-			defer func() { <-limit }()
-			defer close(ch)
+		j := &job{
+			cmd: cmd,
+			ch:  oc.GetCh(),
+		}
 
-			buf, _ := cmd.CombinedOutput()
-			if len(buf) > 0 {
-				ch <- string(buf)
-			}
-		}()
+		l.Do(j)
 	}
 	oc.Wait()
+	l.Wait()
 	close(outCh)
 	<-done
 }

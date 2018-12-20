@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"time"
 
 	"github.com/sago35/limichan"
 	"github.com/sago35/ochan"
@@ -27,6 +28,7 @@ func build07(cmds []*exec.Cmd) {
 	}
 	go func() {
 		w, _ := newWorker(`127.0.0.1`, 12345, *threads)
+		time.Sleep(1 * time.Second)
 		for i := 0; i < *threads; i++ {
 			l.AddWorker(w)
 		}
@@ -42,8 +44,10 @@ func build07(cmds []*exec.Cmd) {
 		}
 
 		j := &job{
-			cmd: cmd,
-			ch:  oc.GetCh(),
+			cmd:     cmd,
+			ch:      oc.GetCh(),
+			outFile: cmd.Args[2:2],
+			depFile: cmd.Args[3:],
 		}
 
 		l.Do(j)

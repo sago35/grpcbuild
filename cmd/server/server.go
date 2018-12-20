@@ -57,14 +57,12 @@ func (s *server) Exec(ctx context.Context, in *pb.ExecRequest) (*pb.ExecResponse
 	stderr := new(bytes.Buffer)
 
 	for _, c := range in.GetCmds() {
-		log.Printf("%#v\n", c)
-
 		so := new(bytes.Buffer)
 		se := new(bytes.Buffer)
 		mwso := io.MultiWriter(so, os.Stdout)
 		mwse := io.MultiWriter(se, os.Stderr)
 
-		cmd := exec.CommandContext(ctx, c.GetPath(), c.GetArgs()...)
+		cmd := exec.CommandContext(ctx, c.GetPath(), c.GetArgs()[1:]...)
 		cmd.Dir = filepath.Join(s.dir, c.GetDir())
 		cmd.Stdout = mwso
 		cmd.Stderr = mwse

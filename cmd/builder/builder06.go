@@ -100,7 +100,7 @@ func (w *worker) Do(ctx context.Context, lj limichan.Job) error {
 	}
 	er.Cmds = append(er.Cmds, &pb.Cmd{
 		Path: cmd.Path,
-		Args: cmd.Args[1:],
+		Args: cmd.Args,
 		Dir:  cmd.Dir,
 	})
 

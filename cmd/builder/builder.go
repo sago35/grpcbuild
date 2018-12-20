@@ -15,7 +15,7 @@ var (
 )
 
 const (
-	dummyCc = "dummycc.exe"
+	dummyCc = "dummycc"
 )
 
 func main() {
@@ -88,7 +88,10 @@ dummyld -o testdata/a.out testdata/aa.o testdata/ab.o testdata/ac.o testdata/ad.
 	scanner := bufio.NewScanner(strings.NewReader(xxx))
 	for scanner.Scan() {
 		fields := strings.Fields(scanner.Text())
-		cmds = append(cmds, exec.Command(fields[0], fields[1:]...))
+		cmds = append(cmds, &exec.Cmd{
+			Path: fields[0],
+			Args: fields,
+		})
 	}
 
 	return cmds

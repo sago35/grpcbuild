@@ -9,13 +9,14 @@ import (
 
 func build04(cmds []*exec.Cmd) {
 	outCh := make(chan string, 10000)
-	defer close(outCh)
+	done := make(chan struct{})
 
 	oc := ochan.NewOchan(outCh, 100)
 	go func() {
 		for ch := range outCh {
 			fmt.Print(ch)
 		}
+		close(done)
 	}()
 
 	limit := make(chan struct{}, *threads)
@@ -41,4 +42,6 @@ func build04(cmds []*exec.Cmd) {
 		}()
 	}
 	oc.Wait()
+	close(outCh)
+	<-done
 }

@@ -165,8 +165,10 @@ func build06(cmds []*exec.Cmd) {
 		}
 
 		j := &job{
-			cmd: cmd,
-			ch:  oc.GetCh(),
+			cmd:     cmd,
+			ch:      oc.GetCh(),
+			outFile: cmd.Args[2:3],
+			depFile: cmd.Args[3:],
 		}
 
 		l.Do(j)

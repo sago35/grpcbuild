@@ -46,7 +46,7 @@ func build07(cmds []*exec.Cmd) {
 		j := &job{
 			cmd:     cmd,
 			ch:      oc.GetCh(),
-			outFile: cmd.Args[2:2],
+			outFile: cmd.Args[2:3],
 			depFile: cmd.Args[3:],
 		}
 
